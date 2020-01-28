@@ -8,8 +8,8 @@
 	:homepage             <https://metacpan.org/release/Sub-MultiMethod>;
 	:download-page        <https://metacpan.org/release/Sub-MultiMethod>;
 	:bug-database         <http://rt.cpan.org/Dist/Display.html?Queue=Sub-MultiMethod>;
-#	:repository           [ a :GitRepository; :browse <https://github.com/tobyink/p5-sub-multimethod> ];
-	:created              2020-01-28;
+	:repository           [ a :GitRepository; :browse <https://github.com/tobyink/p5-sub-multimethod> ];
+	:created              2020-01-27;
 	:license              <http://dev.perl.org/licenses/>;
 	:maintainer           cpan:TOBYINK;
 	:developer            cpan:TOBYINK.
