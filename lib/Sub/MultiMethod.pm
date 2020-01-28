@@ -493,6 +493,12 @@ well and is less concerned with providing a nice syntax for setting them
 up. That said, the syntax provided is inspired by Moose's C<has> keyword
 and hopefully not entirely horrible.
 
+Sub::MultiMethods has much smarter dispatching than L<Kavorka>, but the
+tradeoff is that this is a little slower. Overall, for the JSON example
+in the SYNOPSIS, Kavorka is about twice as fast. (But with Kavorka, it
+would quote the numbers in the output because numbers are a type of string,
+and that was declared first!)
+
 =head2 C<< multimethod $name => %spec >>
 
 The following options are supported in the specification for the
@@ -778,15 +784,16 @@ you want is multimethods. Uses source filters.
 L<Dios> - object oriented programming framework including multimethods.
 Includes a full type system and Keyword::Declare-based syntax. Pretty
 sensible dispatch technique which is almost identical to
-Sub::MultiMethod.
+Sub::MultiMethod. Much much slower though, at both compile time and
+runtime.
 
 L<MooseX::MultiMethods> - uses Moose type system and Devel::Declare-based
 syntax. Not entirely sure what the dispatching method is.
 
 L<Kavorka> - I wrote this, so I'm allowed to be critical. Type::Tiny-based
-type system. Very naive dispatching though; just dispatches to the first
-declared candidate that can handle it rather than trying to find the
-"best".
+type system. Very naive dispatching; just dispatches to the first declared
+candidate that can handle it rather than trying to find the "best". It is
+fast though.
 
 L<Sub::Multi::Tiny> - uses Perl attributes to declare candidates to
 be dispatched to. Pluggable dispatching, but by default uses argument
