@@ -565,7 +565,7 @@ An example for named parameters:
 
 Note that C<< $arg >> is an object with methods for each named parameter.
 
-=item C<< alias >> I<< (Str|ArrayRef[Str])
+=item C<< alias >> I<< (Str|ArrayRef[Str]) >>
 
 Optional.
 
@@ -705,7 +705,7 @@ do:
 
     use Sub::MultiMethod -role, qw(multimethod);
 
-The only differece this makes is that the exported C<multimethod>
+The only difference this makes is that the exported C<multimethod>
 function will default to C<< no_dispatcher => 1 >>, so any multimethods
 you define in the role won't be seen by Moose/Mouse/Moo/Role::Tiny as
 part of the role's API, and won't be installed with the C<with> keyword.
