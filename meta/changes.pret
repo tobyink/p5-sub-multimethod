@@ -9,3 +9,9 @@
 	changeset [
 		item "Add missing dependency on MRO::Compat."^^Packaging;
 	].
+
+`Sub-MultiMethod 0.003 cpan:TOBYINK`
+	issued  2020-01-28;
+	changeset [
+		item "Fix bug in aliases where the signature checker could end up as a hashref instead of a coderef."^^Bugfix;
+	].
