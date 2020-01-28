@@ -45,7 +45,7 @@ isnt(
 {
 	package Local::Class2;
 	use Class::Tiny;
-	use parent -norequire, qw(Local::Class1);
+	our @ISA = qw(Local::Class1);
 	use Types::Standard -types;
 	use Sub::MultiMethod qw(multimethod);
 	
@@ -70,7 +70,7 @@ is( $obj2->bar(), 'Class2:bar', 'monomethod overriding inherited multimethod' );
 {
 	package Local::Class3;
 	use Class::Tiny;
-	use parent -norequire, qw(Local::Class2);
+	our @ISA = qw(Local::Class2);
 	use Types::Standard -types;
 	use Sub::MultiMethod qw(multimethod);
 	
@@ -110,7 +110,7 @@ is( $obj3->bar({}), 'Class2:bar', 'even higher up candidates are hidden by inher
 {
 	package Local::Class4;
 	use Class::Tiny;
-	use parent -norequire, qw(Local::Class3);
+	our @ISA = qw(Local::Class3);
 	use Types::Standard -types;
 	use Sub::MultiMethod qw(multimethod);
 
