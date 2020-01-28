@@ -4,3 +4,8 @@
 	issued  2020-01-28;
 	label   "Initial release".
 
+`Sub-MultiMethod 0.002 cpan:TOBYINK`
+	issued  2020-01-28;
+	changeset [
+		item "Add missing dependency on MRO::Compat."^^Packaging;
+	].
