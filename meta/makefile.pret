@@ -3,7 +3,15 @@
 @prefix : <http://ontologi.es/doap-deps#>.
 
 `Sub-MultiMethod`
+	:runtime-requirement    [ :on "perl 5.008"^^:CpanId ];
+	:runtime-requirement    [ :on "Types::Standard 1.008003"^^:CpanId ];
+	:runtime-requirement    [ :on "Type::Params 1.008003"^^:CpanId ];
+	:runtime-requirement    [ :on "Exporter::Shiny"^^:CpanId ];
+	:runtime-requirement    [ :on "Sub::Util"^^:CpanId ];
 	:test-requirement       [ :on "Test::More 0.96"^^:CpanId ];
+	:test-requirement       [ :on "Class::Tiny"^^:CpanId ];
+	:test-requirement       [ :on "Role::Tiny"^^:CpanId ];
+	:test-requirement       [ :on "Test::Fatal"^^:CpanId ];
 	:develop-recommendation [ :on "Dist::Inkt 0.001"^^:CpanId ];
 	.
 
