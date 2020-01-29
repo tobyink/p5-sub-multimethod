@@ -39,10 +39,12 @@ sub _generate_multimethods_from_roles {
 	!defined $target and die;
 	ref $target and die;
 	
+	my $is_role = 0+!!$globals->{role};
+	
 	return sub {
 		my @roles = @_;
 		$me->copy_package_candidates(@roles => $target);
-		$me->install_missing_dispatchers($target);
+		$me->install_missing_dispatchers($target) unless $is_role;
 	};
 }
 
@@ -721,7 +723,7 @@ do:
 
     use Sub::MultiMethod -role, qw(multimethod);
 
-The only difference this makes is that the exported C<multimethod>
+The main difference this makes is that the exported C<multimethod>
 function will default to C<< no_dispatcher => 1 >>, so any multimethods
 you define in the role won't be seen by Moose/Mouse/Moo/Role::Tiny as
 part of the role's API, and won't be installed with the C<with> keyword.
@@ -736,6 +738,10 @@ consumed, so in classes that consume roles with multimethods, do this:
 The list of roles should generally be the same as from C<with>.
 This function only copies multimethods across from roles; it does not
 copy their aliases. However, C<with> should find and copy the aliases.
+
+If consuming one role into another role, remember to import
+C<multimethods_from_roles> into the consumer with the C<< -role >>
+tag so it knows not to set up the dispatchers in the role.
 
 All other things being equal, candidates defined in classes should
 beat candidates imported from roles.
