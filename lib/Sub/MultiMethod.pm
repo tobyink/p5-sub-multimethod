@@ -664,6 +664,9 @@ gets passed the result from checking the signature earlier as C<< @_ >>.
 
 =head2 Roles
 
+As far as I'm aware, Sub::MultiMethod is the only multimethod implementation
+that allows multimethods imported from roles to intertegrate into a class.
+
   use v5.12;
   use strict;
   use warnings;
@@ -708,9 +711,9 @@ gets passed the result from checking the signature earlier as C<< @_ >>.
   
   my $obj = My::Class->new;
   
-  say $obj->foo_a;        # A
-  say $obj->foo( [] );    # B
-  say $obj->foo( {} );    # C
+  say $obj->foo_a;        # A (alias defined in RoleA)
+  say $obj->foo( [] );    # B (candidate from RoleB)
+  say $obj->foo( {} );    # C (Class overrides candidate from RoleA)
 
 Sub::MultiMethods doesn't try to be clever about detecting whether your
 package is a role or a class. If you want to use it in a role, simply
