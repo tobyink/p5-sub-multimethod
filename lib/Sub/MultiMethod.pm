@@ -8,7 +8,7 @@ our $AUTHORITY = 'cpan:TOBYINK';
 our $VERSION   = '0.003';
 
 use B ();
-use Exporter::Shiny qw( multimethod multimethods_from_roles );
+use Exporter::Shiny qw( multimethod multimethods_from_roles monomethod );
 use Sub::Util ();
 use Type::Params ();
 use Types::Standard -types;
@@ -45,6 +45,21 @@ sub _generate_multimethods_from_roles {
 		my @roles = @_;
 		$me->copy_package_candidates(@roles => $target);
 		$me->install_missing_dispatchers($target) unless $is_role;
+	};
+}
+
+sub _generate_monomethod {
+	my ($me, $name, $args, $globals) = (shift, @_);
+	
+	my $target = $globals->{into};
+	!defined $target and die;
+	ref $target and die;
+	
+	my $is_role = 0+!!$globals->{role};
+	
+	return sub {
+		my ($sub_name, %spec) = @_;
+		$me->install_monomethod($target, $sub_name, no_dispatcher => 1, %spec);
 	};
 }
 
@@ -91,6 +106,17 @@ sub install_missing_dispatchers {
 	}
 }
 
+sub install_monomethod {
+	my $me = shift;
+	my ($target, $sub_name, %spec) = @_;
+	
+	$spec{alias} ||= [];
+	$spec{alias} = [$spec{alias}] if !ref $spec{alias};
+	unshift @{$spec{alias}}, $sub_name;
+	
+	$me->install_candidate($target, undef, no_dispatcher => 1, %spec, is_monomethod => 1);
+}
+
 sub install_candidate {
 	my $me = shift;
 	my ($target, $sub_name, %spec) = @_;
@@ -100,7 +126,8 @@ sub install_candidate {
 	
 	$spec{declaration_order} = ++$DECLARATION_ORDER;
 	
-	push @{ $CANDIDATES{$target}{$sub_name} ||= [] }, \%spec;
+	push @{ $CANDIDATES{$target}{$sub_name} ||= [] }, \%spec
+		if defined $sub_name;
 	
 	if ($spec{alias}) {
 		$spec{alias} = [$spec{alias}] unless ref $spec{alias};
@@ -143,11 +170,24 @@ sub install_candidate {
 		);
 		for my $alias (@aliases) {
 			no strict 'refs';
+			my $existing = do {
+				exists(&{"$target\::$alias"})
+					? \&{"$target\::$alias"}
+					: undef;
+			};
+			if ($existing) {
+				my $kind = ($spec{is_monomethod} && ($alias eq $aliases[0]))
+					? 'Monomethod'
+					: 'Alias';
+				require Carp;
+				Carp::croak("$kind conflicts with existing method $target\::$alias, bailing out");
+			}
 			*{"$target\::$alias"} = $coderef;
 		}
 	}
 	
-	$me->install_dispatcher($target, $sub_name, $is_method) unless $spec{no_dispatcher};
+	$me->install_dispatcher($target, $sub_name, $is_method)
+		if defined $sub_name && !$spec{no_dispatcher};
 }
 
 sub install_dispatcher {
@@ -160,6 +200,8 @@ sub install_dispatcher {
 			? \&{"$target\::$sub_name"}
 			: undef;
 	};
+	
+	return if !defined $sub_name;
 	
 	if ($existing and $DISPATCHERS{"$existing"}) {
 		return $me;   # already installed
@@ -621,6 +663,26 @@ and accept the default.
 
 =back
 
+=head2 C<< monomethod $name => %spec >>
+
+As a convenience, you can use Sub::MultiMethod to install normal methods.
+Why do this instead of using Perl's plain old C<sub> keyword? Well, it gives
+you the same signature checking.
+
+Supports the following options:
+
+=over
+
+=item C<< named >> I<< (Bool) >>
+
+=item C<< signature >> I<< (ArrayRef|CodeRef) >>
+
+=item C<< code >> I<< (CodeRef) >>
+
+=item C<< method >> I<< (Int) >>
+
+=back
+
 =head2 Dispatch Technique
 
 When a multimethod is called, a list of packages to inspect for candidates
@@ -771,6 +833,10 @@ C<< $is_method >> is an integer/boolean.
 
 This rarely needs to be manually called as C<install_candidate> will do it
 automatically.
+
+=item C<< Sub::MultiMethod->install_monomethod($target, $sub_name, %spec) >>
+
+Installs a regular (non-multimethod) method into the target.
 
 =item C<< Sub::MultiMethod->copy_package_candidates(@sources => $target) >>
 
