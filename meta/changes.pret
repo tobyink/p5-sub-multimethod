@@ -15,3 +15,12 @@
 	changeset [
 		item "Fix bug in aliases where the signature checker could end up as a hashref instead of a coderef."^^Bugfix;
 	].
+
+`Sub-MultiMethod 0.004 cpan:TOBYINK`
+	issued  2020-02-05;
+	changeset [
+		item "Improve documentation about multimethods and roles."^^Documentation;
+		item "Rock/paper/scissors example."^^Documentation;
+		item "Fix for multimethods in roles that consume other roles."^^Bugfix;
+		item "Provide a `monomethod` function to install non-multimethods with the same signature handling as `monomethod`."^^Addition;
+	].
