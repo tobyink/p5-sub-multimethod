@@ -545,18 +545,42 @@ multimethods:
 
 =head1 DESCRIPTION
 
-Sub::Multimethods focusses on implementing the dispatching of multimethods
+Sub::Multimethod focusses on implementing the dispatching of multimethods
 well and is less concerned with providing a nice syntax for setting them
 up. That said, the syntax provided is inspired by Moose's C<has> keyword
 and hopefully not entirely horrible.
 
-Sub::MultiMethods has much smarter dispatching than L<Kavorka>, but the
+Sub::MultiMethod has much smarter dispatching than L<Kavorka>, but the
 tradeoff is that this is a little slower. Overall, for the JSON example
 in the SYNOPSIS, Kavorka is about twice as fast. (But with Kavorka, it
 would quote the numbers in the output because numbers are a type of string,
 and that was declared first!)
 
-=head2 C<< multimethod $name => %spec >>
+=head2 Functions
+
+Sub::MultiMethod exports nothing by default. You can import the functions
+you want by listing them in the C<use> statement:
+
+  use Sub::MultiMethod "multimethod", "multimethods_from_roles";
+
+You can rename functions:
+
+  use Sub::MultiMethod "multimethod" => { -as => "mm" };
+
+If you are using Sub::MultiMethod in a role, make sure you include
+the C<< -role >> option:
+
+  use Sub::MultiMethod -role, "multimethod";
+
+You can import everything using C<< -all >>:
+
+  use Sub::MultiMethod -all;
+  use Sub::MultiMethod -role, -all;
+
+Sub::MultiMethod also offers an API for setting up multimethods for a
+class, in which case, you don't need to import anything.
+
+=head3 C<< multimethod $name => %spec >>
 
 The following options are supported in the specification for the
 multimethod.
@@ -663,7 +687,7 @@ and accept the default.
 
 =back
 
-=head2 C<< monomethod $name => %spec >>
+=head3 C<< monomethod $name => %spec >>
 
 As a convenience, you can use Sub::MultiMethod to install normal methods.
 Why do this instead of using Perl's plain old C<sub> keyword? Well, it gives
@@ -684,8 +708,14 @@ Supports the following options:
 =back
 
 C<< monomethod($name, %spec) >> is basically just a shortcut for
-C<< monomethod(undef, alias => $name, %spec) >> though with error
+C<< multimethod(undef, alias => $name, %spec) >> though with error
 messages which don't mention it being an alias.
+
+=head3 C<< multimethods_from_roles @roles >>
+
+Imports any multimethods defined in roles, and adds them to the
+current package as if they were defined locally. See the section on
+roles below.
 
 =head2 Dispatch Technique
 
@@ -730,7 +760,7 @@ none, an error occurs. If there is one, that candidate is dispatched to
 using C<goto> so there is no trace of Sub::MultiMethod in C<caller>. It
 gets passed the result from checking the signature earlier as C<< @_ >>.
 
-=head2 Roles
+=head3 Roles
 
 As far as I'm aware, Sub::MultiMethod is the only multimethod implementation
 that allows multimethods imported from roles to intertegrate into a class.
@@ -825,7 +855,8 @@ C<< $target >> is the class (package) name being installed into.
 
 C<< $sub_name >> is the name of the method.
 
-C<< %spec >> is the multimethod spec.
+C<< %spec >> is the multimethod spec. If C<< $target >> is a role, you
+probably want to include C<< no_dispatcher => 1 >> as part of the spec.
 
 =item C<< Sub::MultiMethod->install_dispatcher($target, $sub_name, $is_method) >>
 
@@ -852,7 +883,8 @@ Useful if C<< @sources >> are a bunch of roles (like Role::Tiny).
 
 =item C<< Sub::MultiMethod->install_missing_dispatchers($target) >>
 
-Should usually be called after C<copy_package_candidates>.
+Should usually be called after C<copy_package_candidates>, unless
+C<< $target >> is a role.
 
 =back
 
