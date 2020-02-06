@@ -34,3 +34,10 @@
 		item "Document the behaviour of multimethods with a number of invocants not equal to 1."^^Documentation;
 	].
 
+`Sub-MultiMethod 0.006 cpan:TOBYINK`
+	issued  2020-02-06;
+	changeset [
+		item "Don't require Sub::Util if Sub::Name is already installed."^^Packaging;
+		item "Don't require MRO::Compat on Perl 5.10 or above."^^Packaging;
+	].
+
