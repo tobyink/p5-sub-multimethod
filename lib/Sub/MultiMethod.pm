@@ -15,7 +15,7 @@ use Types::Standard -types;
 *_set_subname =
 	eval { require Sub::Util;  \&Sub::Util::set_subname } ||
 	eval { require Sub::Name;  \&Sub::Name::subname }     ||
-	do   { require Sub::Util;  \&Sub::Util::set_subname } ;
+	do   { sub { pop } } ;
 
 our %CANDIDATES;
 our %DISPATCHERS;
