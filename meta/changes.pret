@@ -24,3 +24,13 @@
 		item "Fix for multimethods in roles that consume other roles."^^Bugfix;
 		item "Provide a `monomethod` function to install non-multimethods with the same signature handling as `monomethod`."^^Addition;
 	].
+
+`Sub-MultiMethod 0.005 cpan:TOBYINK`
+	issued  2020-02-06;
+	changeset [
+		item "Test `multimethod(undef, %spec)` works."^^Tests;
+		item "Test `method => $n` for $n=0 and $n=2."^^Tests;
+		item "Various improvements to documentation including exporting functions."^^Documentation;
+		item "Document the behaviour of multimethods with a number of invocants not equal to 1."^^Documentation;
+	].
+
