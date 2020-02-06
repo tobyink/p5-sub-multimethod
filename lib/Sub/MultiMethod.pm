@@ -9,9 +9,13 @@ our $VERSION   = '0.005';
 
 use B ();
 use Exporter::Shiny qw( multimethod multimethods_from_roles monomethod );
-use Sub::Util ();
 use Type::Params ();
 use Types::Standard -types;
+
+*_set_subname =
+	eval { require Sub::Util;  \&Sub::Util::set_subname } ||
+	eval { require Sub::Name;  \&Sub::Name::subname }     ||
+	do   { require Sub::Util;  \&Sub::Util::set_subname } ;
 
 our %CANDIDATES;
 our %DISPATCHERS;
@@ -164,7 +168,7 @@ sub install_candidate {
 				? 'Type::Params::compile_named_oo'
 				: 'Type::Params::compile',
 		);
-		my $coderef = Sub::Util::set_subname(
+		my $coderef = _set_subname(
 			"$target\::$aliases[0]",
 			eval($code)||die($@),
 		);
