@@ -231,6 +231,10 @@ sub install_dispatcher {
 	
 	eval "$code; 1" or die($@);
 	
+	exists &mro::get_linear_isa
+		or eval { require mro }
+		or do { require MRO::Compat };
+	
 	my $coderef = do {
 		no strict 'refs';
 		\&{"$target\::$sub_name"};
@@ -252,7 +256,7 @@ sub dispatch {
 	
 	# Figure out which packages to consider when finding candidates.
 	my @packages = $is_method
-		? do { require MRO::Compat; @{ mro::get_linear_isa($pkg) } }
+		? @{ mro::get_linear_isa($pkg) }
 		: $pkg;
 	my $curr_height = @packages;
 	
