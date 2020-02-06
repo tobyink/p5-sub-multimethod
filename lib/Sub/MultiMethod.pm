@@ -683,6 +683,10 @@ Supports the following options:
 
 =back
 
+C<< monomethod($name, %spec) >> is basically just a shortcut for
+C<< monomethod(undef, alias => $name, %spec) >> though with error
+messages which don't mention it being an alias.
+
 =head2 Dispatch Technique
 
 When a multimethod is called, a list of packages to inspect for candidates
