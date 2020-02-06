@@ -665,7 +665,8 @@ Multisubs where some candidates are methods and others are non-methods are
 not currently supported! (And probably never will be.)
 
 (Yes, this is technically an integer rather than a boolean. This allows
-for subs to have, say, two logical invocants. This is mostly untested though.)
+for subs to have, say, two logical invocants. For example, in Catalyst,
+you might want to treat the context object as a second invocant.)
 
 =item C<< score >> I<< (Int) >>
 
@@ -749,11 +750,15 @@ any additional constraints on values.) In these cases, the child type
 has the same score as its parent. All these scores are added together
 to get a single score for the candidate. For candidates where the
 signature is a coderef, this is essentially a zero score for the
-signature unless one was specified explicitly.
+signature unless a score was specified explicitly.
 
 If multiple candidates are equally constrained, child class candidates
 beat parent class candidates; class candidates beat role candidates;
 and the candidate that was declared earlier wins.
+
+Note that invocants are not part of the signature, so not taken into
+account when calculating scores, but because child class candidates
+beat parent class candidates, they should mostly behave as expected.
 
 After this, there should be one preferred candidate or none. If there is
 none, an error occurs. If there is one, that candidate is dispatched to
