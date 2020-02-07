@@ -21,6 +21,27 @@ our %CANDIDATES;
 our %DISPATCHERS;
 our $DECLARATION_ORDER = 0;
 
+sub get_multimethods {
+	my ($me, $target) = @_;
+	sort keys %{ $CANDIDATES{$target} || {} };
+}
+
+sub get_multimethod_candidates {
+	my ($me, $target, $method_name) = @_;
+	@{ $CANDIDATES{$target}{$method_name} || [] };
+}
+
+sub has_multimethod_candidates {
+	my ($me, $target, $method_name) = @_;
+	scalar @{ $CANDIDATES{$target}{$method_name} || [] };
+}
+
+sub _add_multimethod_candidate {
+	my ($me, $target, $method_name, $spec) = @_;
+	push @{ $CANDIDATES{$target}{$method_name} ||= [] }, $spec;
+	$me;
+}
+
 sub _generate_multimethod {
 	my ($me, $name, $args, $globals) = (shift, @_);
 	
@@ -81,15 +102,15 @@ sub copy_package_candidates {
 	my $target = pop @sources;
 	
 	for my $source (@sources) {
-		for my $method_name (sort keys %{ $CANDIDATES{$source} || {} }) {
-			for my $candidate (@{ $CANDIDATES{$source}{$method_name} }) {
+		for my $method_name ($me->get_multimethods($source)) {
+			for my $candidate ($me->get_multimethod_candidates($source, $method_name)) {
 				my %new = map {
 					$keep_while_copying{$_}
 						? ( $_ => $candidate->{$_} )
 						: ()
 				} keys %$candidate;
 				$new{copied} = 1;
-				push @{ $CANDIDATES{$target}{$method_name} ||= [] }, \%new;
+				$me->_add_multimethod_candidate($target, $method_name, \%new);
 			}
 		}
 	}
@@ -99,13 +120,12 @@ sub install_missing_dispatchers {
 	my $me = shift;
 	my ($target) = @_;
 	
-	for my $method_name (sort keys %{ $CANDIDATES{$target} || {} }) {
+	for my $method_name ($me->get_multimethods($target)) {
+		my ($first) = $me->get_multimethod_candidates($target, $method_name);
 		$me->install_dispatcher(
 			$target,
 			$method_name,
-			$CANDIDATES{$target}{$method_name}[0]
-				? $CANDIDATES{$target}{$method_name}[0]{'method'}
-				: 0,
+			$first ? $first->{'method'} : 0,
 		);
 	}
 }
@@ -130,7 +150,7 @@ sub install_candidate {
 	
 	$spec{declaration_order} = ++$DECLARATION_ORDER;
 	
-	push @{ $CANDIDATES{$target}{$sub_name} ||= [] }, \%spec
+	$me->_add_multimethod_candidate($target, $sub_name, \%spec)
 		if defined $sub_name;
 	
 	if ($spec{alias}) {
@@ -270,9 +290,9 @@ sub dispatch {
 	PACKAGE: while (@packages) {
 		my $p = shift @packages;
 		my @c;
-		my $found = $CANDIDATES{$p}{$method_name};
+		my $found = $me->has_multimethod_candidates($p, $method_name);
 		if ($found) {
-			@c = @$found;
+			@c = $me->get_multimethod_candidates($p, $method_name);
 		}
 		else {
 			no strict 'refs';
