@@ -894,7 +894,13 @@ beat candidates imported from roles.
 =head2 API
 
 Sub::MultiMethod avoids cute syntax hacks because those can be added by
-third party modules. It provides an API for these modules:
+third party modules. It provides an API for these modules.
+
+Brief note on terminology: when you define multimethods in a class,
+each possible signature+coderef is a "candidate". The method which
+makes the decision about which candidate to call is the "dispatcher".
+Roles will typically have candidates but no dispatcher. Classes will
+need dispatchers setting up for each multimethod.
 
 =over
 
@@ -934,6 +940,26 @@ Useful if C<< @sources >> are a bunch of roles (like Role::Tiny).
 
 Should usually be called after C<copy_package_candidates>, unless
 C<< $target >> is a role.
+
+=item C<< Sub::MultiMethod->get_multimethods($target) >>
+
+Returns the names of all multimethods declared for a class or role,
+not including any parent classes.
+
+=item C<< Sub::MultiMethod->has_multimethod_candidates($target, $method_name) >>
+
+Indicates whether the class or role has any candidates for a multimethod.
+Does not include parent classes.
+
+=item C<< Sub::MultiMethod->get_multimethod_candidates($target, $method_name) >>
+
+Returns a list of candidate spec hashrefs for the method, not including
+candidates from parent classes.
+
+=item C<< Sub::MultiMethod->known_dispatcher($coderef) >>
+
+Returns a boolean indicating whether the coderef is known to be a multimethod
+dispatcher.
 
 =back
 
