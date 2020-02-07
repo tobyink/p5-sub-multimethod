@@ -776,7 +776,7 @@ gets passed the result from checking the signature earlier as C<< @_ >>.
 =head3 Roles
 
 As far as I'm aware, Sub::MultiMethod is the only multimethod implementation
-that allows multimethods imported from roles to intertegrate into a class.
+that allows multimethods imported from roles to integrate into a class.
 
   use v5.12;
   use strict;
@@ -822,7 +822,7 @@ that allows multimethods imported from roles to intertegrate into a class.
   
   my $obj = My::Class->new;
   
-  say $obj->foo_a;        # A (alias defined in RoleA)
+  say $obj->foo_a( {} );  # A (alias defined in RoleA)
   say $obj->foo( [] );    # B (candidate from RoleB)
   say $obj->foo( {} );    # C (Class overrides candidate from RoleA)
 
@@ -830,7 +830,7 @@ Sub::MultiMethods doesn't try to be clever about detecting whether your
 package is a role or a class. If you want to use it in a role, simply
 do:
 
-    use Sub::MultiMethod -role, qw(multimethod);
+  use Sub::MultiMethod -role, qw(multimethod);
 
 The main difference this makes is that the exported C<multimethod>
 function will default to C<< no_dispatcher => 1 >>, so any multimethods
@@ -840,9 +840,9 @@ part of the role's API, and won't be installed with the C<with> keyword.
 Sub::MultiMethods doesn't try to detect what roles your class has
 consumed, so in classes that consume roles with multimethods, do this:
 
-    use Sub::MultiMethod qw(multimethods_from_roles);
-    
-    multimethods_from_roles qw( My::RoleA My::RoleB );
+  use Sub::MultiMethod qw(multimethods_from_roles);
+  
+  multimethods_from_roles qw( My::RoleA My::RoleB );
 
 The list of roles should generally be the same as from C<with>.
 This function only copies multimethods across from roles; it does not
