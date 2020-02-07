@@ -41,3 +41,11 @@
 		item "Don't require MRO::Compat on Perl 5.10 or above."^^Packaging;
 	].
 
+`Sub-MultiMethod 0.007 cpan:TOBYINK`
+	issued  2020-02-07;
+	changeset [
+		item "Minor fixes for roles documentation."^^Documentation;
+		item "Refactor to expose more internals as part of the API."^^Change;
+		item "Add a warning if a conflict is detected in number of invocants for a multimethod."^^Addition;
+	].
+
