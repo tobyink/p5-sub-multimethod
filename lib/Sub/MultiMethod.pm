@@ -40,6 +40,55 @@ use Types::Standard -types;
 		push @{ $CANDIDATES{$target}{$method_name} ||= [] }, $spec;
 		$me;
 	}
+	
+	sub get_all_multimethod_candidates {
+		my ($me, $target, $method_name, $is_method) = @_;
+		
+		# Figure out which packages to consider when finding candidates.
+		my @packages = $is_method
+			? @{ mro::get_linear_isa($target) }
+			: $target;
+		my $curr_height = @packages;
+		
+		# Find candidates from each package
+		my @candidates;
+		my $final_fallback = undef;
+		PACKAGE: while (@packages) {
+			my $p = shift @packages;
+			my @c;
+			my $found = $me->has_multimethod_candidates($p, $method_name);
+			if ($found) {
+				@c = $me->get_multimethod_candidates($p, $method_name);
+			}
+			else {
+				no strict 'refs';
+				if (exists &{"$p\::$method_name"}) {
+					# We found a potential monomethod.
+					my $coderef = \&{"$p\::$method_name"};
+					if (!$me->known_dispatcher($coderef)) {
+						# Definite monomethod. Stop falling back.
+						$final_fallback = $coderef;
+						last PACKAGE;
+					}
+				}
+				@c = ();
+			}
+			# Record their height in case we need it later
+			$_->{height} = $curr_height for @c;
+			push @candidates, @c;
+			--$curr_height;
+		}
+		
+		# If a monomethod was found, use it as last resort
+		if (defined $final_fallback) {
+			push @candidates, {
+				signature => sub { @_ },
+				code      => $final_fallback,
+			};
+		}
+		
+		return @candidates;
+	}
 }
 
 {
@@ -291,56 +340,20 @@ sub dispatch {
 	
 	# Steal invocants because we don't want them to be considered
 	# as part of the signature.
-	my $invocants = [];
-	push @$invocants, splice(@$argv, 0, $is_method);
+	my @invocants;
+	push @invocants, splice(@$argv, 0, $is_method);
 	
-	# Figure out which packages to consider when finding candidates.
-	my @packages = $is_method
-		? @{ mro::get_linear_isa($pkg) }
-		: $pkg;
-	my $curr_height = @packages;
-	
-	# Find candidates from each package
-	my @candidates;
-	my $final_fallback = undef;
-	PACKAGE: while (@packages) {
-		my $p = shift @packages;
-		my @c;
-		my $found = $me->has_multimethod_candidates($p, $method_name);
-		if ($found) {
-			@c = $me->get_multimethod_candidates($p, $method_name);
-		}
-		else {
-			no strict 'refs';
-			# We found a monomethod! Stop looking at parents.
-			if (exists &{"$p\::$method_name"}) {
-				$final_fallback = \&{"$p\::$method_name"};
-				last PACKAGE;
-			}
-			@c = ();
-		}
-		# Record their height in case we need it later
-		$_->{height} = $curr_height for @c;
-		push @candidates, @c;
-		--$curr_height;
-	}
-	
-	# If a monomethod was found, use it as last resort
-	if (defined $final_fallback) {
-		push @candidates, {
-			signature => sub { @_ },
-			code      => $final_fallback,
-		};
-	}
-	
-	# Now we have a list of candidates, so dispatch to it.
-	my $next = $me->can('dispatch_to_candidate');
-	@_ = (
-		$me,
-		\@candidates,
+	my ($winner, $new_argv, $new_invocants) = $me->pick_candidate(
+		[ $me->get_all_multimethod_candidates($pkg, $method_name, $is_method) ],
 		$argv,
-		$invocants,
-	);
+		\@invocants,
+	) or do {
+		require Carp;
+		Carp::croak('Multimethod could not find candidate to dispatch to, stopped');
+	};
+	
+	my $next = $winner->{code};
+	@_ = (@$new_invocants, @$new_argv);
 	goto $next;
 }
 
@@ -349,7 +362,7 @@ sub dispatch {
 #
 my $Named = CycleTuple->of(Str, Any) | Tuple->of(HashRef);
 
-sub dispatch_to_candidate {
+sub pick_candidate {
 	my $me = shift;
 	my ($candidates, $argv, $invocants) = @_;
 	
@@ -465,18 +478,12 @@ sub dispatch_to_candidate {
 	# This is filled in each call. Clean it up, just in case.
 	delete $_->{height} for @$candidates;
 	
-	if (@remaining==1) {
-		my $sig_code  = $remaining[0]{compiled}{closure};
-		my $body_code = $remaining[0]{code};
-		@_ = ( @{$invocants||[]}, @{ $returns{"$sig_code"} } );
-		goto $body_code;
-	}
-	else {
-		require Carp;
-		Carp::croak('Multimethod could not find candidate to dispatch to, stopped');
-	}
+	wantarray or die 'MUST BE CALLED IN LIST CONTEXT';
 	
-	return;
+	return unless @remaining;
+	
+	my $sig_code  = $remaining[0]{compiled}{closure};
+	return ( $remaining[0], $returns{"$sig_code"}, $invocants||[] );
 }
 
 sub dump_sig {
@@ -956,10 +963,37 @@ Does not include parent classes.
 Returns a list of candidate spec hashrefs for the method, not including
 candidates from parent classes.
 
+=item C<< Sub::MultiMethod->get_all_multimethod_candidates($target, $method_name, $is_method) >>
+
+Returns a list of candidate spec hashrefs for the method, including candidates
+from parent classes (unless C<< $is_method >> is false, because non-methods
+shouldn't be inherited).
+
 =item C<< Sub::MultiMethod->known_dispatcher($coderef) >>
 
 Returns a boolean indicating whether the coderef is known to be a multimethod
 dispatcher.
+
+=item C<< Sub::MultiMethod->pick_candidate(\@candidates, \@args, \@invocants) >>
+
+Returns a list of three items: first the winning candidate from an array of specs,
+given the args and invocants, second the modified args after coercion has been 
+applied, and third the modified invocants.
+
+This is basically how the dispatcher for a method works:
+
+  my @invocants = splice(@_, 0, $ismethod);
+  my $pkg       = __PACKAGE__;
+  
+  my $mm = 'Sub::MultiMethod';
+  my @candidates =
+    $smm->get_all_multimethod_candidates($pkg, $sub, $ismethod);
+  my ($winner, $new_args, $new_invocants) =
+    $smm->pick_candidate(\@candidates, \@_, \@invocants);
+  
+  my $coderef = $winner->{code};
+  @_ = (@$new_invocants, @$new_args);
+  goto $coderef;
 
 =back
 
