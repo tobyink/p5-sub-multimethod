@@ -38,6 +38,15 @@ use Types::Standard -types;
 	sub _add_multimethod_candidate {
 		my ($me, $target, $method_name, $spec) = @_;
 		push @{ $CANDIDATES{$target}{$method_name} ||= [] }, $spec;
+		if ($spec->{method} != $CANDIDATES{$target}{$method_name}[0]{method}) {
+			require Carp;
+			Carp::carp(sprintf(
+				"Added multimethod candidate for %s with method=>%d but expected method=>%d",
+				$method_name,
+				$spec->{method},
+				$CANDIDATES{$target}{$method_name}[0]{method},
+			));
+		}
 		$me;
 	}
 	
@@ -209,7 +218,7 @@ my $DECLARATION_ORDER = 0;
 sub install_candidate {
 	my $me = shift;
 	my ($target, $sub_name, %spec) = @_;
-	$spec{method} = 1 unless exists $spec{method};
+	$spec{method} = 1 unless defined $spec{method};
 	
 	my $is_method = $spec{method};
 	
