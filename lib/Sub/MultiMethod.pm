@@ -17,29 +17,44 @@ use Types::Standard -types;
 	eval { require Sub::Name;  \&Sub::Name::subname }     ||
 	do   { sub { pop } } ;
 
-my %CANDIDATES;
-our %DISPATCHERS;
-our $DECLARATION_ORDER = 0;
-
-sub get_multimethods {
-	my ($me, $target) = @_;
-	sort keys %{ $CANDIDATES{$target} || {} };
+{
+	my %CANDIDATES;
+	
+	sub get_multimethods {
+		my ($me, $target) = @_;
+		sort keys %{ $CANDIDATES{$target} || {} };
+	}
+	
+	sub get_multimethod_candidates {
+		my ($me, $target, $method_name) = @_;
+		@{ $CANDIDATES{$target}{$method_name} || [] };
+	}
+	
+	sub has_multimethod_candidates {
+		my ($me, $target, $method_name) = @_;
+		scalar @{ $CANDIDATES{$target}{$method_name} || [] };
+	}
+	
+	sub _add_multimethod_candidate {
+		my ($me, $target, $method_name, $spec) = @_;
+		push @{ $CANDIDATES{$target}{$method_name} ||= [] }, $spec;
+		$me;
+	}
 }
 
-sub get_multimethod_candidates {
-	my ($me, $target, $method_name) = @_;
-	@{ $CANDIDATES{$target}{$method_name} || [] };
-}
-
-sub has_multimethod_candidates {
-	my ($me, $target, $method_name) = @_;
-	scalar @{ $CANDIDATES{$target}{$method_name} || [] };
-}
-
-sub _add_multimethod_candidate {
-	my ($me, $target, $method_name, $spec) = @_;
-	push @{ $CANDIDATES{$target}{$method_name} ||= [] }, $spec;
-	$me;
+{
+	my %DISPATCHERS;
+	
+	sub known_dispatcher {
+		my ($me, $coderef) = @_;
+		$DISPATCHERS{"$coderef"};
+	}
+	
+	sub _mark_as_dispatcher {
+		my ($me, $coderef) = @_;
+		$DISPATCHERS{"$coderef"} = 1;
+		$me;
+	}
 }
 
 sub _generate_multimethod {
@@ -141,6 +156,7 @@ sub install_monomethod {
 	$me->install_candidate($target, undef, no_dispatcher => 1, %spec, is_monomethod => 1);
 }
 
+my $DECLARATION_ORDER = 0;
 sub install_candidate {
 	my $me = shift;
 	my ($target, $sub_name, %spec) = @_;
@@ -227,7 +243,7 @@ sub install_dispatcher {
 	
 	return if !defined $sub_name;
 	
-	if ($existing and $DISPATCHERS{"$existing"}) {
+	if ($existing and $me->known_dispatcher($existing)) {
 		return $me;   # already installed
 	}
 	elsif ($existing) {
@@ -264,7 +280,7 @@ sub install_dispatcher {
 		\&{"$target\::$sub_name"};
 	};
 	
-	$DISPATCHERS{"$coderef"} = 1;
+	$me->_mark_as_dispatcher($coderef);
 	
 	return $coderef;
 }
