@@ -17,7 +17,7 @@ use Types::Standard -types;
 	eval { require Sub::Name;  \&Sub::Name::subname }     ||
 	do   { sub { pop } } ;
 
-our %CANDIDATES;
+my %CANDIDATES;
 our %DISPATCHERS;
 our $DECLARATION_ORDER = 0;
 
