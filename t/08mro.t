@@ -2,6 +2,7 @@ use strict;
 use warnings;
 use Test::More;
 use Test::Requires 'MRO::Compat';
+use Test::Requires '5.010';
 
 {
 	package Class::DFS::A;
