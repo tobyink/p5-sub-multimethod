@@ -49,3 +49,11 @@
 		item "Add a warning if a conflict is detected in number of invocants for a multimethod."^^Addition;
 	].
 
+`Sub-MultiMethod 0.008 cpan:TOBYINK`
+	issued  2020-02-11;
+	changeset [
+		item "Fix a candidate selection issue that could arise from late-loaded base classes and/or diamond inheritance."^^Bugfix;
+		item "Diamond inheritance tests."^^Tests;
+		item "Document obscure Perl 5.8 mro issue."^^Documentation;
+	].
+
