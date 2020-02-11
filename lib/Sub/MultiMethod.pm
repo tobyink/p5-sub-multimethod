@@ -10,7 +10,7 @@ our $VERSION   = '0.007';
 use B ();
 use Exporter::Shiny qw( multimethod multimethods_from_roles monomethod );
 use Type::Params ();
-use Types::Standard -types;
+use Types::Standard qw( -types is_ClassName is_Object );
 
 *_set_subname =
 	eval { require Sub::Util;  \&Sub::Util::set_subname } ||
@@ -352,6 +352,15 @@ sub dispatch {
 	my @invocants;
 	push @invocants, splice(@$argv, 0, $is_method);
 	
+	if ( $is_method and is_Object($invocants[0]) ) {
+		# object method; reset package search from invocant class
+		$pkg = ref($invocants[0]);
+	}
+	elsif ( $is_method and is_ClassName($invocants[0]) ) {
+		# class method; reset package search from invocant class
+		$pkg = $invocants[0];
+	}
+	
 	my ($winner, $new_argv, $new_invocants) = $me->pick_candidate(
 		[ $me->get_all_multimethod_candidates($pkg, $method_name, $is_method) ],
 		$argv,
@@ -463,7 +472,7 @@ sub pick_candidate {
 	if (@remaining > 1) {
 		# Only keep those from the most derived class
 		no warnings qw(uninitialized numeric);
-		@remaining = sort { $a->{height} <=> $b->{height} } @remaining;
+		@remaining = sort { $b->{height} <=> $a->{height} } @remaining;
 		my $max_score = $remaining[0]->{height};
 		@remaining = grep { $_->{height} == $max_score } @remaining;
 	}
