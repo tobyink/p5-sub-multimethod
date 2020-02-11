@@ -11,6 +11,7 @@
 	:test-requirement       [ :on "Class::Tiny"^^:CpanId ];
 	:test-requirement       [ :on "Role::Tiny"^^:CpanId ];
 	:test-requirement       [ :on "Test::Fatal"^^:CpanId ];
+	:test-requirement       [ :on "Test::Requires"^^:CpanId ];
 	:develop-recommendation [ :on "Dist::Inkt 0.001"^^:CpanId ];
 	.
 
