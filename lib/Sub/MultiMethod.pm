@@ -1008,7 +1008,7 @@ This is basically how the dispatcher for a method works:
   my @invocants = splice(@_, 0, $ismethod);
   my $pkg       = __PACKAGE__;
   
-  my $mm = 'Sub::MultiMethod';
+  my $smm = 'Sub::MultiMethod';
   my @candidates =
     $smm->get_all_multimethod_candidates($pkg, $sub, $ismethod);
   my ($winner, $new_args, $new_invocants) =
