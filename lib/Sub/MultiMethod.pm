@@ -116,7 +116,6 @@ use Role::Hooks;
 	}
 }
 
-my %hooked;
 sub _generate_multimethod {
 	my ($me, $name, $args, $globals) = (shift, @_);
 	
@@ -129,16 +128,6 @@ sub _generate_multimethod {
 		my $is_role = !! 'Role::Hooks'->is_role($target);
 		
 		$me->install_candidate($target, $sub_name, no_dispatcher => $is_role, %spec);
-		
-		if ($is_role and not $hooked{$target}) {
-			'Role::Hooks'->after_apply($target, sub {
-				my ($rolepkg, $consumerpkg) = @_;
-				$me->copy_package_candidates($rolepkg => $consumerpkg);
-				$me->install_missing_dispatchers($consumerpkg)
-					unless 'Role::Hooks'->is_role($consumerpkg);
-			});
-			$hooked{$target}++;
-		}
 	};
 }
 
@@ -213,12 +202,13 @@ sub install_monomethod {
 	$me->install_candidate($target, undef, no_dispatcher => 1, %spec, is_monomethod => 1);
 }
 
+my %hooked;
 my $DECLARATION_ORDER = 0;
 sub install_candidate {
 	my $me = shift;
 	my ($target, $sub_name, %spec) = @_;
 	$spec{method} = 1 unless defined $spec{method};
-	
+
 	my $is_method = $spec{method};
 	
 	$spec{declaration_order} = ++$DECLARATION_ORDER;
@@ -285,6 +275,16 @@ sub install_candidate {
 	
 	$me->install_dispatcher($target, $sub_name, $is_method)
 		if defined $sub_name && !$spec{no_dispatcher};
+	
+	if ( !$hooked{$target} and 'Role::Hooks'->is_role($target) ) {
+		'Role::Hooks'->after_apply($target, sub {
+			my ($rolepkg, $consumerpkg) = @_;
+			$me->copy_package_candidates($rolepkg => $consumerpkg);
+			$me->install_missing_dispatchers($consumerpkg)
+				unless 'Role::Hooks'->is_role($consumerpkg);
+		});
+		$hooked{$target}++;
+	}
 }
 
 sub install_dispatcher {
