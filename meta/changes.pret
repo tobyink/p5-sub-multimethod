@@ -63,3 +63,9 @@
 		item "Simplify usage in roles."^^Change;
 	].
 
+`Sub-MultiMethod 0.901 cpan:TOBYINK`
+	issued  2020-10-09;
+	changeset [
+		item "Refactor role support, setting up role hooks in the API instead of the exported `multimethod` function."^^Change;
+	].
+
