@@ -43,7 +43,7 @@ package Game::Combos::Standard; {
 	use Sub::MultiMethod -role, qw( multimethod multimethods_from_roles );
 	
 	with qw( Game::Combos::Base );
-	multimethods_from_roles qw( Game::Combos::Base );
+	#multimethods_from_roles qw( Game::Combos::Base );
 	
 	multimethod play => (
 		signature => [Paper, Rock],
@@ -67,7 +67,7 @@ package Game::Combos::Extra; {
 	use Sub::MultiMethod -role, qw( multimethod multimethods_from_roles );
 	
 	with qw( Game::Combos::Standard );
-	multimethods_from_roles qw( Game::Combos::Standard );
+	#multimethods_from_roles qw( Game::Combos::Standard );
 
 	multimethod play => (
 		signature => [Paper, Spock],
@@ -107,7 +107,7 @@ package Game::Standard; {
 	use Sub::MultiMethod qw( multimethods_from_roles );
 
 	with qw( Game::Combos::Standard );
-	multimethods_from_roles qw( Game::Combos::Standard );
+	#multimethods_from_roles qw( Game::Combos::Standard );
 }
 
 package Game::Extended; {
@@ -116,7 +116,7 @@ package Game::Extended; {
 	use Sub::MultiMethod qw( multimethods_from_roles );
 
 	with qw( Game::Combos::Extra );
-	multimethods_from_roles qw( Game::Combos::Extra );
+	#multimethods_from_roles qw( Game::Combos::Extra );
 }
 
 package main;

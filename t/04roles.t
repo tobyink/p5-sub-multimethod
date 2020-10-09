@@ -34,7 +34,7 @@ package My::Class; {
 	
 	with qw( My::RoleA My::RoleB );
 	
-	multimethods_from_roles qw( My::RoleA My::RoleB );
+	#multimethods_from_roles qw( My::RoleA My::RoleB );
 	
 	multimethod foo => (
 		signature  => [ HashRef ],

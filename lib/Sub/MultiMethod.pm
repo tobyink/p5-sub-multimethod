@@ -11,6 +11,7 @@ use B ();
 use Exporter::Shiny qw( multimethod multimethods_from_roles monomethod );
 use Type::Params ();
 use Types::Standard qw( -types is_ClassName is_Object );
+use Role::Hooks;
 
 *_set_subname =
 	eval { require Sub::Util;  \&Sub::Util::set_subname } ||
@@ -115,6 +116,7 @@ use Types::Standard qw( -types is_ClassName is_Object );
 	}
 }
 
+my %hooked;
 sub _generate_multimethod {
 	my ($me, $name, $args, $globals) = (shift, @_);
 	
@@ -122,28 +124,40 @@ sub _generate_multimethod {
 	!defined $target and die;
 	ref $target and die;
 	
-	my $is_role = 0+!!$globals->{role};
+#	my $is_role = 0+!!$globals->{role};
 	
 	return sub {
 		my ($sub_name, %spec) = @_;
+		my $is_role = !! 'Role::Hooks'->is_role($target);
 		$me->install_candidate($target, $sub_name, no_dispatcher => $is_role, %spec);
+		if ($is_role and not $hooked{$target}) {
+			'Role::Hooks'->after_apply($target, sub {
+				my ($rolepkg, $consumerpkg) = @_;
+				$me->copy_package_candidates($rolepkg => $consumerpkg);
+				$me->install_missing_dispatchers($consumerpkg)
+					unless 'Role::Hooks'->is_role($consumerpkg);
+			});
+			$hooked{$target}++;
+		}
 	};
 }
 
 sub _generate_multimethods_from_roles {
 	my ($me, $name, $args, $globals) = (shift, @_);
 	
-	my $target = $globals->{into};
-	!defined $target and die;
-	ref $target and die;
+	return sub { return; };
 	
-	my $is_role = 0+!!$globals->{role};
-	
-	return sub {
-		my @roles = @_;
-		$me->copy_package_candidates(@roles => $target);
-		$me->install_missing_dispatchers($target) unless $is_role;
-	};
+#	my $target = $globals->{into};
+#	!defined $target and die;
+#	ref $target and die;
+#	
+#	my $is_role = 0+!!$globals->{role};
+#	
+#	return sub {
+#		my @roles = @_;
+#		$me->copy_package_candidates(@roles => $target);
+#		$me->install_missing_dispatchers($target) unless $is_role;
+#	};
 }
 
 sub _generate_monomethod {
@@ -153,7 +167,7 @@ sub _generate_monomethod {
 	!defined $target and die;
 	ref $target and die;
 	
-	my $is_role = 0+!!$globals->{role};
+#	my $is_role = 0+!!$globals->{role};
 	
 	return sub {
 		my ($sub_name, %spec) = @_;
