@@ -5,7 +5,7 @@ use warnings;
 package Sub::MultiMethod;
 
 our $AUTHORITY = 'cpan:TOBYINK';
-our $VERSION   = '0.8';
+our $VERSION   = '0.900';
 
 use B ();
 use Exporter::Shiny qw( multimethod multimethods_from_roles monomethod );
