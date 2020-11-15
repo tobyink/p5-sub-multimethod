@@ -69,3 +69,9 @@
 		item "Refactor role support, setting up role hooks in the API instead of the exported `multimethod` function."^^Change;
 	].
 
+`Sub-MultiMethod 0.902 cpan:TOBYINK`
+	issued  2020-11-15;
+	changeset [
+		item "Should require Sub::Util 1.40, not Sub::Name 1.40."^^Packaging;
+	].
+
