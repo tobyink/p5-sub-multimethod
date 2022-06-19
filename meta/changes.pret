@@ -87,3 +87,9 @@
 	changeset [
 		item "When calling a method which was a coderef, it shouldn't be necessary to look in parent classes."^^Change;
 	].
+
+`Sub-MultiMethod 0.905 cpan:TOBYINK`
+	issued  2022-06-19;
+	changeset [
+		item "Avoid using a particular optimization if Type::Param's head or tail options are being used."^^Change;
+	].
