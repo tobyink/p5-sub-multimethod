@@ -79,4 +79,5 @@
 	issued  2022-06-19;
 	changeset [
 		item "Sub::MultiMethod now supports references to coderefs as method names."^^Addition;
+		item "Drop support for Perl 5.8.0 (Jul 2002); minimum Perl version is now 5.8.1 (Sep 2003)."^^Packaging;
 	].
