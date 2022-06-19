@@ -493,6 +493,10 @@ sub pick_candidate {
 			$candidate->{compiled} = $candidate->{named}
 				? Type::Params::compile_named_oo($opt, @sig)
 				: Type::Params::compile($opt, @sig);
+			
+			$candidate->{compiled}{_pure_named} = $candidate->{named};
+			delete $candidate->{compiled}{_pure_named}
+				if $opt->{head} || $opt->{tail};
 		}
 	}
 	
@@ -505,7 +509,7 @@ sub pick_candidate {
 	
 	@remaining = grep {
 		my $candidate = $_;
-		if ($candidate->{named} && !$argv_maybe_named) {
+		if ($candidate->{compiled}{_pure_named} && !$argv_maybe_named) {
 			0;
 		}
 		elsif (defined $candidate->{compiled}{min_args} and $candidate->{compiled}{min_args} > $argc) {
