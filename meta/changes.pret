@@ -75,3 +75,8 @@
 		item "Should require Sub::Util 1.40, not Sub::Name 1.40."^^Packaging;
 	].
 
+`Sub-MultiMethod 0.903 cpan:TOBYINK`
+	issued  2022-06-19;
+	changeset [
+		item "Sub::MultiMethod now supports references to coderefs as method names."^^Addition;
+	].
