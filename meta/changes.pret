@@ -81,3 +81,9 @@
 		item "Sub::MultiMethod now supports references to coderefs as method names."^^Addition;
 		item "Drop support for Perl 5.8.0 (Jul 2002); minimum Perl version is now 5.8.1 (Sep 2003)."^^Packaging;
 	].
+
+`Sub-MultiMethod 0.904 cpan:TOBYINK`
+	issued  2022-06-19;
+	changeset [
+		item "When calling a method which was a coderef, it shouldn't be necessary to look in parent classes."^^Change;
+	].
