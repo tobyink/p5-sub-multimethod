@@ -9,9 +9,10 @@ our $VERSION   = '0.902';
 
 use B ();
 use Exporter::Shiny qw( multimethod multimethods_from_roles monomethod );
-use Type::Params ();
-use Types::Standard qw( -types is_ClassName is_Object );
 use Role::Hooks;
+use Scalar::Util qw( refaddr );
+use Type::Params ();
+use Types::Standard qw( -types -is );
 
 *_set_subname =
 	eval { require Sub::Util;  \&Sub::Util::set_subname } ||
@@ -20,85 +21,108 @@ use Role::Hooks;
 
 {
 	my %CANDIDATES;
-	
-	sub get_multimethods {
+	sub _get_multimethods_ref {
 		my ($me, $target) = @_;
-		sort keys %{ $CANDIDATES{$target} || {} };
-	}
-	
-	sub get_multimethod_candidates {
-		my ($me, $target, $method_name) = @_;
-		@{ $CANDIDATES{$target}{$method_name} || [] };
-	}
-	
-	sub has_multimethod_candidates {
-		my ($me, $target, $method_name) = @_;
-		scalar @{ $CANDIDATES{$target}{$method_name} || [] };
-	}
-	
-	sub _add_multimethod_candidate {
-		my ($me, $target, $method_name, $spec) = @_;
-		push @{ $CANDIDATES{$target}{$method_name} ||= [] }, $spec;
-		if ($spec->{method} != $CANDIDATES{$target}{$method_name}[0]{method}) {
-			require Carp;
-			Carp::carp(sprintf(
-				"Added multimethod candidate for %s with method=>%d but expected method=>%d",
-				$method_name,
-				$spec->{method},
-				$CANDIDATES{$target}{$method_name}[0]{method},
-			));
+		if ( not $CANDIDATES{$target} ) {
+			$CANDIDATES{$target} = {};
 		}
-		$me;
+		$CANDIDATES{$target};
 	}
+}
+
+sub get_multimethods {
+	my ($me, $target) = @_;
+	sort keys %{ $me->_get_multimethods_ref($target) };
+}
+
+sub _get_multimethod_candidates_ref {
+	my ($me, $target, $method_name) = @_;
+	my $mm = $me->_get_multimethods_ref($target);
+	my $method_key = ref($method_name) ? refaddr($method_name) : $method_name;
+	$mm->{$method_key} ||= [];
+}
+
+sub _clear_multimethod_candidates_ref {
+	my ($me, $target, $method_name) = @_;
+	my $mm = $me->_get_multimethods_ref($target);
+	my $method_key = ref($method_name) ? refaddr($method_name) : $method_name;
+	delete $mm->{$method_key};
+	return $me;
+}
 	
-	sub get_all_multimethod_candidates {
-		my ($me, $target, $method_name, $is_method) = @_;
-		
-		# Figure out which packages to consider when finding candidates.
-		my @packages = $is_method
-			? @{ mro::get_linear_isa($target) }
-			: $target;
-		my $curr_height = @packages;
-		
-		# Find candidates from each package
-		my @candidates;
-		my $final_fallback = undef;
-		PACKAGE: while (@packages) {
-			my $p = shift @packages;
-			my @c;
-			my $found = $me->has_multimethod_candidates($p, $method_name);
-			if ($found) {
-				@c = $me->get_multimethod_candidates($p, $method_name);
-			}
-			else {
-				no strict 'refs';
-				if (exists &{"$p\::$method_name"}) {
-					# We found a potential monomethod.
-					my $coderef = \&{"$p\::$method_name"};
-					if (!$me->known_dispatcher($coderef)) {
-						# Definite monomethod. Stop falling back.
-						$final_fallback = $coderef;
-						last PACKAGE;
-					}
+sub get_multimethod_candidates {
+	my ($me, $target, $method_name) = @_;
+	@{ $me->_get_multimethod_candidates_ref($target, $method_name) };
+}
+
+sub has_multimethod_candidates {
+	my ($me, $target, $method_name) = @_;
+	scalar @{ $me->_get_multimethod_candidates_ref($target, $method_name) };
+}
+
+sub _add_multimethod_candidate {
+	my ($me, $target, $method_name, $spec) = @_;
+	my $mmc = $me->_get_multimethod_candidates_ref($target, $method_name);
+	push @$mmc, $spec;
+	if ($spec->{method} != $mmc->[0]{method}) {
+		require Carp;
+		Carp::carp(sprintf(
+			"Added multimethod candidate for %s with method=>%d but expected method=>%d",
+			$method_name,
+			$spec->{method},
+			$mmc->[0]{method},
+		));
+	}
+	$me;
+}
+
+sub get_all_multimethod_candidates {
+	my ($me, $target, $method_name, $is_method) = @_;
+	
+	# Figure out which packages to consider when finding candidates.
+	my @packages = $is_method
+		? @{ mro::get_linear_isa($target) }
+		: $target;
+	my $curr_height = @packages;
+	
+	# Find candidates from each package
+	my @candidates;
+	my $final_fallback = undef;
+	PACKAGE: while (@packages) {
+		my $p = shift @packages;
+		my @c;
+		my $found = $me->has_multimethod_candidates($p, $method_name);
+		if ($found) {
+			@c = $me->get_multimethod_candidates($p, $method_name);
+		}
+		else {
+			no strict 'refs';
+			if (exists &{"$p\::$method_name"}) {
+				# We found a potential monomethod.
+				my $coderef = \&{"$p\::$method_name"};
+				if (!$me->known_dispatcher($coderef)) {
+					# Definite monomethod. Stop falling back.
+					$final_fallback = $coderef;
+					last PACKAGE;
 				}
-				@c = ();
 			}
-			# Record their height in case we need it later
-			$_->{height} = $curr_height for @c;
-			push @candidates, @c;
-			--$curr_height;
+			@c = ();
 		}
-		
-		# If a monomethod was found, use it as last resort
-		if (defined $final_fallback) {
-			push @candidates, {
-				signature => sub { @_ },
-				code      => $final_fallback,
-			};
-		}
-		
-		return @candidates;
+		# Record their height in case we need it later
+		$_->{height} = $curr_height for @c;
+		push @candidates, @c;
+		--$curr_height;
 	}
+	
+	# If a monomethod was found, use it as last resort
+	if (defined $final_fallback) {
+		push @candidates, {
+			signature => sub { @_ },
+			code      => $final_fallback,
+		};
+	}
+	
+	return @candidates;
 }
 
 {
@@ -106,12 +130,18 @@ use Role::Hooks;
 	
 	sub known_dispatcher {
 		my ($me, $coderef) = @_;
-		$DISPATCHERS{"$coderef"};
+		$DISPATCHERS{refaddr($coderef)};
 	}
 	
 	sub _mark_as_dispatcher {
 		my ($me, $coderef) = @_;
-		$DISPATCHERS{"$coderef"} = 1;
+		$DISPATCHERS{refaddr($coderef)} = 1;
+		$me;
+	}
+	
+	sub _unmark_as_dispatcher {
+		my ($me, $coderef) = @_;
+		$DISPATCHERS{refaddr($coderef)} = 0;
 		$me;
 	}
 }
@@ -217,17 +247,17 @@ sub install_candidate {
 		if defined $sub_name;
 	
 	if ($spec{alias}) {
-		$spec{alias} = [$spec{alias}] unless ref $spec{alias};
+		$spec{alias} = [$spec{alias}] unless is_ArrayRef $spec{alias};
 		my @aliases = @{$spec{alias}};
 		my $next    =   $spec{code} or die "NO CODE???";
 		
 		my ($check, @sig);
-		if (CodeRef->check($spec{signature})) {
+		if (is_CodeRef $spec{signature}) {
 			$check = $spec{signature};
 		}
 		else {
 			@sig = @{$spec{signature}};
-			if (HashRef->check($sig[0]) and not $sig[0]{slurpy}) {
+			if (is_HashRef $sig[0] and not $sig[0]{slurpy}) {
 				my %new_opts = %{$sig[0]};
 				delete $new_opts{want_source};
 				delete $new_opts{want_details};
@@ -251,13 +281,13 @@ sub install_candidate {
 				? 'Type::Params::compile_named_oo'
 				: 'Type::Params::compile',
 		);
-		my $coderef = _set_subname(
-			"$target\::$aliases[0]",
-			eval($code)||die($@),
-		);
+		my $coderef = do {
+			local $@;
+			eval $code or die $@,
+		};
 		for my $alias (@aliases) {
-			no strict 'refs';
 			my $existing = do {
+				no strict 'refs';
 				exists(&{"$target\::$alias"})
 					? \&{"$target\::$alias"}
 					: undef;
@@ -269,7 +299,7 @@ sub install_candidate {
 				require Carp;
 				Carp::croak("$kind conflicts with existing method $target\::$alias, bailing out");
 			}
-			*{"$target\::$alias"} = $coderef;
+			$me->_install_coderef( $target, $alias, $coderef );
 		}
 	}
 	
@@ -287,9 +317,62 @@ sub install_candidate {
 	}
 }
 
+{
+	my %CLEANUP;
+	
+	sub _install_coderef {
+		my $me = shift;
+		my ($target, $sub_name, $coderef) = @_;
+		if (is_ScalarRef $sub_name) {
+			if (is_Undef $$sub_name) {
+				_set_subname("$target\::__ANON__", $coderef);
+				bless( $coderef, $me );
+				$CLEANUP{"$coderef"} = [ $target, refaddr($sub_name) ];
+				return( $$sub_name = $coderef );
+			}
+			elsif (is_CodeRef $$sub_name || is_Object $$sub_name) {
+				if ( $me->known_dispatcher($$sub_name) ) {
+					return $$sub_name;
+				}
+				else {
+					require Carp;
+					Carp::croak(sprintf(
+						'Sub name was a reference to an unknown coderef or object: %s',
+						$$sub_name,
+					));
+				}
+			}
+		}
+		elsif (is_Str $sub_name) {
+			no strict 'refs';
+			my $qname = "$target\::$sub_name";
+			*$qname = _set_subname($qname, $coderef);
+			return $coderef;
+		}
+		require Carp;
+		Carp::croak(sprintf(
+			'Expected string or reference to coderef as sub name, but got: %s',
+			$sub_name,
+		));
+	}
+	
+	sub DESTROY {
+		my $blessed_coderef = shift;
+		my ( $target, $sub_name ) = @{ $CLEANUP{"$blessed_coderef"} or [] };
+		if ( $target and $sub_name ) {
+			$blessed_coderef->_clear_multimethod_candidates_ref($target, $sub_name);
+		}
+		return;
+	}
+}
+
 sub install_dispatcher {
 	my $me = shift;
 	my ($target, $sub_name, $is_method) = @_;
+	
+	exists &mro::get_linear_isa
+		or eval { require mro }
+		or do { require MRO::Compat };
 	
 	my $existing = do {
 		no strict 'refs';
@@ -311,34 +394,29 @@ sub install_dispatcher {
 	my $code = sprintf(
 		q{
 			package %s;
-			sub %s {
+			sub {
 				my $next = %s->can('dispatch');
 				@_ = (%s, %s, %s, %d, [@_]);
 				goto $next;
 			}
 		},
-		$target,                   # package %s
-		$sub_name,                 # sub %s
-		B::perlstring($me),        # %s->can('dispatch')
-		B::perlstring($me),        # $_[0]
-		B::perlstring($target),    # $_[1]
-		B::perlstring($sub_name),  # $_[2]
-		$is_method,                # $_[3]
+		$target,                     # package %s
+		B::perlstring($me),          # %s->can('dispatch')
+		B::perlstring($me),          # $_[0]
+		B::perlstring($target),      # $_[1]
+		ref($sub_name)               # $_[2]
+			? refaddr($sub_name)
+			: B::perlstring("$sub_name"),
+		$is_method,                  # $_[3]
 	);
 	
-	eval "$code; 1" or die($@);
-	
-	exists &mro::get_linear_isa
-		or eval { require mro }
-		or do { require MRO::Compat };
-	
 	my $coderef = do {
-		no strict 'refs';
-		\&{"$target\::$sub_name"};
+		local $@;
+		eval $code or die $@;
 	};
 	
+	$me->_install_coderef($target, $sub_name, $coderef);
 	$me->_mark_as_dispatcher($coderef);
-	
 	return $coderef;
 }
 
@@ -390,14 +468,16 @@ sub pick_candidate {
 	
 	for my $candidate (@remaining) {
 		next if $candidate->{compiled};
-		if (CodeRef->check($candidate->{signature})) {
+		if (is_CodeRef $candidate->{signature}) {
 			$candidate->{compiled}{closure} = $candidate->{signature};
 			$candidate->{compiled}{min_args} = 0;
 			$candidate->{compiled}{max_args} = undef;
 		}
 		else {
 			my @sig = @{ $candidate->{signature} };
-			my $opt = (HashRef->check($sig[0]) && !$sig[0]{slurpy}) ? shift(@sig) : {};
+			my $opt = (is_HashRef $sig[0] and not $sig[0]{slurpy})
+				? shift(@sig)
+				: {};
 			$opt->{want_details} = 1;
 			
 			$candidate->{compiled} = $candidate->{named}
@@ -453,9 +533,9 @@ sub pick_candidate {
 		for my $candidate (@remaining) {
 			next if defined $candidate->{score};
 			my $sum = 0;
-			if (ArrayRef->check($candidate->{signature})) {
+			if (is_ArrayRef $candidate->{signature}) {
 				foreach my $type (@{ $candidate->{signature} }) {
-					next unless Object->check($type);
+					next unless is_Object $type;
 					my @real_parents = grep !$_->_is_null_constraint, $type, $type->parents;
 					$sum += @real_parents;
 				}
@@ -884,6 +964,35 @@ that allows multimethods imported from roles to integrate into a class.
 
 All other things being equal, candidates defined in classes should
 beat candidates imported from roles.
+
+=head2 CodeRef multimethods
+
+The C<< $name >> of a multimethod may be a scalarref, in which case
+C<multimethod> will install the multimethod as a coderef into the
+scalar referred to. Example:
+
+  my ($coderef, $otherref);
+  
+  multimethod \$coderef => (
+    method => 0,
+    signature => [ ArrayRef ],
+    code => sub { say "It's an arrayref!" },
+  );
+  
+  multimethod \$coderef => (
+    method => 0,
+    alias => \$otherref,
+    signature => [ HashRef ],
+    code => sub { say "It's a hashref!" },
+  );
+  
+  $coderef->( [] );
+  $coderef->( {} );
+  
+  $otherref->( {} );
+
+The C<< $coderef >> and C<< $otherref >> variables will actually end up
+as blessed coderefs so that some tidy ups can take place in C<DESTROY>.
 
 =head2 API
 
