@@ -98,12 +98,19 @@ like(
 );
 
 undef $stringify;
-undef $stringify_str;
 
 is_deeply(
 	Sub::MultiMethod->_get_multimethods_ref(__PACKAGE__),
 	{},
-	'No trace left behind',
+	'No trace left behind after $stringify goes out of scope',
 );
+
+is(
+	$stringify_str->("a"),
+	'"a"',
+	'$stringify_str still works as it does not use the dispatcher',
+);
+
+undef $stringify_str;
 
 done_testing;
