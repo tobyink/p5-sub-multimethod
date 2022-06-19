@@ -46,9 +46,11 @@ multimethod \$stringify => (
 	},
 );
 
+{ package Local::Xyzzy;
+use Sub::MultiMethod 'multimethod';
 multimethod \$stringify => (
 	method => 0,
-	signature => [ ArrayRef ],
+	signature => [ ::ArrayRef ],
 	code      => sub {
 		my ($arr) = (@_);
 		sprintf(
@@ -57,6 +59,7 @@ multimethod \$stringify => (
 		);
 	},
 );
+}
 
 multimethod \$stringify => (
 	method => 0,

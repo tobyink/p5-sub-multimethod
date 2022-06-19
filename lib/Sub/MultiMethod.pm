@@ -37,15 +37,17 @@ sub get_multimethods {
 
 sub _get_multimethod_candidates_ref {
 	my ($me, $target, $method_name) = @_;
-	my $mm = $me->_get_multimethods_ref($target);
-	my $method_key = ref($method_name) ? refaddr($method_name) : $method_name;
+	my $method_key  = ref($method_name) ? refaddr($method_name) : $method_name;
+	my $package_key = is_Int($method_key) ? '__CODE__' : $target;
+	my $mm = $me->_get_multimethods_ref($package_key);
 	$mm->{$method_key} ||= [];
 }
 
 sub _clear_multimethod_candidates_ref {
 	my ($me, $target, $method_name) = @_;
-	my $mm = $me->_get_multimethods_ref($target);
-	my $method_key = ref($method_name) ? refaddr($method_name) : $method_name;
+	my $method_key  = ref($method_name) ? refaddr($method_name) : $method_name;
+	my $package_key = is_Int($method_key) ? '__CODE__' : $target;
+	my $mm = $me->_get_multimethods_ref($package_key);
 	delete $mm->{$method_key};
 	return $me;
 }
@@ -80,9 +82,17 @@ sub get_all_multimethod_candidates {
 	my ($me, $target, $method_name, $is_method) = @_;
 	
 	# Figure out which packages to consider when finding candidates.
-	my @packages = $is_method
-		? @{ mro::get_linear_isa($target) }
-		: $target;
+	my (@packages, $is_coderef_method);
+	if (is_Int $method_name or is_ScalarRef $method_name) {
+		@packages = '__CODE__';
+		$is_coderef_method = 1;
+	}
+	else {
+		@packages = $is_method
+			? @{ mro::get_linear_isa($target) }
+			: $target;
+	}
+	
 	my $curr_height = @packages;
 	
 	# Find candidates from each package
@@ -95,7 +105,7 @@ sub get_all_multimethod_candidates {
 		if ($found) {
 			@c = $me->get_multimethod_candidates($p, $method_name);
 		}
-		else {
+		elsif (not $is_coderef_method) {
 			no strict 'refs';
 			if (exists &{"$p\::$method_name"}) {
 				# We found a potential monomethod.
