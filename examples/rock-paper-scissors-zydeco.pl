@@ -1,9 +1,8 @@
-use v5.12;
-use strict;
+use v5.24;
 use warnings;
 
 package Game {
-	use MooX::Pression;
+	use Zydeco;
 	
 	class Paper        { factory paper    }
 	class Scissors     { factory scissors }
@@ -46,3 +45,4 @@ my $game = Game->new_extended;
 say $game->play(Game->paper, Game->rock);       # 1, Paper covers Rock
 say $game->play(Game->spock, Game->paper);      # 0, Paper disproves Spock
 say $game->play(Game->spock, Game->scissors);   # 1, Spock smashes Scissors
+
