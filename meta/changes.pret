@@ -93,3 +93,10 @@
 	changeset [
 		item "Avoid using a particular optimization if Type::Param's head or tail options are being used."^^Change;
 	].
+
+
+`Sub-MultiMethod 0.906 cpan:TOBYINK`
+	issued  2022-06-25;
+	changeset [
+		item "Fix precedence issue which somehow only came up with Type::Tiny::XS installed."^^Bugfix;
+	].

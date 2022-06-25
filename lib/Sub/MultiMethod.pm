@@ -5,7 +5,7 @@ use warnings;
 package Sub::MultiMethod;
 
 our $AUTHORITY = 'cpan:TOBYINK';
-our $VERSION   = '0.905';
+our $VERSION   = '0.906';
 
 use B ();
 use Exporter::Shiny qw( multimethod multimethods_from_roles monomethod );
@@ -333,7 +333,7 @@ sub install_candidate {
 	sub _install_coderef {
 		my $me = shift;
 		my ($target, $sub_name, $coderef) = @_;
-		if (is_Ref $sub_name) {
+		if (is_ScalarRef $sub_name) {
 			if (is_Undef $$sub_name) {
 				_set_subname("$target\::__ANON__", $coderef);
 				bless( $coderef, $me );
