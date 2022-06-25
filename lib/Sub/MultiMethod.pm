@@ -333,14 +333,14 @@ sub install_candidate {
 	sub _install_coderef {
 		my $me = shift;
 		my ($target, $sub_name, $coderef) = @_;
-		if (is_ScalarRef $sub_name) {
+		if (is_Ref $sub_name) {
 			if (is_Undef $$sub_name) {
 				_set_subname("$target\::__ANON__", $coderef);
 				bless( $coderef, $me );
 				$CLEANUP{"$coderef"} = [ $target, refaddr($sub_name) ];
 				return( $$sub_name = $coderef );
 			}
-			elsif (is_CodeRef $$sub_name || is_Object $$sub_name) {
+			elsif (is_CodeRef $$sub_name or is_Object $$sub_name) {
 				if ( $me->known_dispatcher($$sub_name) ) {
 					return $$sub_name;
 				}
@@ -361,7 +361,7 @@ sub install_candidate {
 		}
 		require Carp;
 		Carp::croak(sprintf(
-			'Expected string or reference to coderef as sub name, but got: %s',
+			'Expected string or reference to coderef as sub name, but got: %s %s',
 			$sub_name,
 		));
 	}
