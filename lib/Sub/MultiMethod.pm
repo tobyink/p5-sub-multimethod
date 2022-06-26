@@ -41,17 +41,19 @@ sub get_multimethods {
 
 sub _get_multimethod_candidates_ref {
 	my ($me, $target, $method_name) = @_;
-	my $method_key  = ref($method_name) ? refaddr($method_name) : $method_name;
-	my $package_key = is_Int($method_key) ? '__CODE__' : $target;
-	my $mm = $me->_get_multimethods_ref($package_key);
+	my ( $package_key, $method_key ) = ref( $method_name )
+		? ( '__CODE__', refaddr( $method_name ) )
+		: ( $target, $method_name );
+	my $mm = $me->_get_multimethods_ref( $package_key );
 	$mm->{$method_key} ||= [];
 }
 
 sub _clear_multimethod_candidates_ref {
-	my ($me, $target, $method_name) = @_;
-	my $method_key  = ref($method_name) ? refaddr($method_name) : $method_name;
-	my $package_key = is_Int($method_key) ? '__CODE__' : $target;
-	my $mm = $me->_get_multimethods_ref($package_key);
+	my ( $me, $target, $method_name ) = ( shift, @_ );
+	my ( $package_key, $method_key ) = ref( $method_name )
+		? ( '__CODE__', refaddr( $method_name ) )
+		: ( $target, $method_name );
+	my $mm = $me->_get_multimethods_ref( $package_key );
 	delete $mm->{$method_key};
 	return $me;
 }
