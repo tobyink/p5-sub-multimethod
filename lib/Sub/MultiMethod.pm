@@ -162,7 +162,10 @@ sub get_all_multimethod_candidates {
 
 sub _generate_multimethods_from_roles {
 	my ($me, $name, $args, $globals) = (shift, @_);
-	return sub { return; };  # this is a no-op now
+	return sub {
+		require Carp;
+		Carp::carp( "Calling multimethods_from_roles is no longer needed and the function will be removed in a future release." );
+	};
 }
 
 sub _generate_exported_function {
@@ -905,11 +908,6 @@ Like C<multimethod> but defaults to C<< method => 0 >>.
 =head3 C<< monofunction $name => %spec >>
 
 Like C<monomethod> but defaults to C<< method => 0 >>.
-
-=head3 C<< multimethods_from_roles >>
-
-This function is exported for compatibility with older versions of
-Sub::MultiMethod, but in recent versions does nothing.
 
 =head2 Dispatch Technique
 
