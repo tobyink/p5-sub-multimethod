@@ -5,7 +5,7 @@ use warnings;
 package Sub::MultiMethod;
 
 our $AUTHORITY = 'cpan:TOBYINK';
-our $VERSION   = '0.907';
+our $VERSION   = '0.908';
 
 use B ();
 use Exporter::Shiny qw(

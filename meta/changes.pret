@@ -107,3 +107,10 @@
 		item "Add `multifunction` and `monofunction` to the exports."^^Addition;
 		item "The `multimethods_from_roles` function is deprecated. Prior to Sub::MultiMethods 0.900, this was a function you'd call in your class to auto-copy any multimethods defined in roles into your class. In Sub::MultiMethods 0.900 that functionality became automatic, and the function to do it manually became a dummy do-nothing sub. It now issues a warning and will be removed at a later date."^^BackCompat;
 	].
+
+`Sub-MultiMethod 0.908 cpan:TOBYINK`
+	issued  2022-06-26;
+	changeset [
+		item "Update examples to no longer call deprecated methods."^^Documentation;
+		item "Minor code tidy ups."^^Change;
+	].
