@@ -71,8 +71,7 @@ sub has_multimethod_candidates {
 sub _add_multimethod_candidate {
 	my ($me, $target, $method_name, $spec) = @_;
 	my $mmc = $me->_get_multimethod_candidates_ref($target, $method_name);
-	push @$mmc, $spec;
-	if ($spec->{method} != $mmc->[0]{method}) {
+	if ( @$mmc and $spec->{method} != $mmc->[0]{method} ) {
 		require Carp;
 		Carp::carp(sprintf(
 			"Added multimethod candidate for %s with method=>%d but expected method=>%d",
@@ -81,6 +80,7 @@ sub _add_multimethod_candidate {
 			$mmc->[0]{method},
 		));
 	}
+	push @$mmc, $spec;
 	$me;
 }
 
