@@ -164,7 +164,7 @@ sub _generate_multimethods_from_roles {
 	my ($me, $name, $args, $globals) = (shift, @_);
 	return sub {
 		require Carp;
-		Carp::carp( "Calling multimethods_from_roles is no longer needed and the function will be removed in a future release" );
+		Carp::carp( "Calling multimethods_from_roles is no longer needed and the function will be removed in a future release. Called" );
 	};
 }
 
