@@ -8,7 +8,11 @@ our $AUTHORITY = 'cpan:TOBYINK';
 our $VERSION   = '0.906';
 
 use B ();
-use Exporter::Shiny qw( multimethod multimethods_from_roles monomethod );
+use Exporter::Shiny qw(
+	multimethod   monomethod
+	multifunction monofunction
+	multimethods_from_roles
+);
 use Role::Hooks;
 use Scalar::Util qw( refaddr );
 use Type::Params ();
@@ -156,37 +160,63 @@ sub get_all_multimethod_candidates {
 	}
 }
 
-sub _generate_multimethod {
-	my ($me, $name, $args, $globals) = (shift, @_);
-	
-	my $target = $globals->{into};
-	!defined $target and die;
-	ref $target and die;
-	
-	return sub {
-		my ($sub_name, %spec) = @_;
-		my $is_role = !! 'Role::Hooks'->is_role($target);
-		
-		$me->install_candidate($target, $sub_name, no_dispatcher => $is_role, %spec);
-	};
-}
-
 sub _generate_multimethods_from_roles {
 	my ($me, $name, $args, $globals) = (shift, @_);
 	return sub { return; };  # this is a no-op now
 }
 
-sub _generate_monomethod {
-	my ($me, $name, $args, $globals) = (shift, @_);
+sub _generate_exported_function {
+	my ( $me, $name, $args, $globals ) = ( shift, @_ );
 	
 	my $target = $globals->{into};
-	!defined $target and die;
-	ref $target and die;
+	if ( ref $target or not defined $target ) {
+		require Carp;
+		Carp::croak( "Function $name can only be installed into a package by package name" );
+	}
+	
+	my %defaults = %{ $args->{defaults} || {} };
+	my $api_call = $args->{api_call} || 'install_candidate';
 	
 	return sub {
-		my ($sub_name, %spec) = @_;
-		$me->install_monomethod($target, $sub_name, no_dispatcher => 1, %spec);
+		my ( $sub_name, %spec ) = @_;
+		if ( $defaults{no_dispatcher} eq 'auto' ) {
+			$defaults{no_dispatcher} = 0+!! 'Role::Hooks'->is_role( $target );
+		}
+		$me->$api_call(
+			$target,
+			$sub_name,
+			%defaults,
+			%spec,
+		);
 	};
+}
+
+sub _generate_multimethod {
+	my ( $me, $name, $args, $globals ) = ( shift, @_ );
+	$args->{defaults}{no_dispatcher} = 'auto';
+	return $me->_generate_exported_function( $name, $args, $globals );
+}
+
+sub _generate_monomethod {
+	my ( $me, $name, $args, $globals ) = ( shift, @_ );
+	$args->{defaults}{no_dispatcher} = 1;
+	$args->{api_call} = 'install_monomethod';
+	return $me->_generate_exported_function( $name, $args, $globals );
+}
+
+sub _generate_multifunction {
+	my ( $me, $name, $args, $globals ) = ( shift, @_ );
+	$args->{defaults}{no_dispatcher} = 'auto';
+	$args->{defaults}{method} = 0;
+	return $me->_generate_exported_function( $name, $args, $globals );
+}
+
+sub _generate_monofunction {
+	my ( $me, $name, $args, $globals ) = ( shift, @_ );
+	$args->{defaults}{no_dispatcher} = 1;
+	$args->{defaults}{method} = 0;
+	$args->{api_call} = 'install_monomethod';
+	return $me->_generate_exported_function( $name, $args, $globals );
 }
 
 my %keep_while_copying = qw(
@@ -867,6 +897,14 @@ Supports the following options:
 C<< monomethod($name, %spec) >> is basically just a shortcut for
 C<< multimethod(undef, alias => $name, %spec) >> though with error
 messages which don't mention it being an alias.
+
+=head3 C<< multifunction $name => %spec >>
+
+Like C<multimethod> but defaults to C<< method => 0 >>.
+
+=head3 C<< monofunction $name => %spec >>
+
+Like C<monomethod> but defaults to C<< method => 0 >>.
 
 =head3 C<< multimethods_from_roles >>
 
