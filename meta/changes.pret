@@ -115,7 +115,7 @@
 		item "Minor code tidy ups."^^Change;
 	].
 
-`Sub-MultiMethod 0.908 cpan:TOBYINK`
+`Sub-MultiMethod 0.909 cpan:TOBYINK`
 	issued  2022-06-26;
 	changeset [
 		item "Use Perl 5.20+ sub signatures in examples."^^Documentation;
