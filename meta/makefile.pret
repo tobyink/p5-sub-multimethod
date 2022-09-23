@@ -4,8 +4,8 @@
 
 `Sub-MultiMethod`
 	:runtime-requirement    [ :on "perl 5.008001"^^:CpanId ];
-	:runtime-requirement    [ :on "Types::Standard 1.999_013"^^:CpanId ];
-	:runtime-requirement    [ :on "Type::Params 1.999_013"^^:CpanId ];
+	:runtime-requirement    [ :on "Types::Standard 2.000000"^^:CpanId ];
+	:runtime-requirement    [ :on "Type::Params 2.000000"^^:CpanId ];
 	:runtime-requirement    [ :on "Exporter::Shiny"^^:CpanId ];
 	:runtime-requirement    [ :on "Role::Hooks"^^:CpanId ];
 	:test-requirement       [ :on "Test::More 0.96"^^:CpanId ];

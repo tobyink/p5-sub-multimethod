@@ -121,3 +121,11 @@
 		item "Use Perl 5.20+ sub signatures in examples."^^Documentation;
 		item "Other minor pod tidy ups."^^Documentation;
 	].
+
+`Sub-MultiMethod 1.000 cpan:TOBYINK`
+	issued  2022-09-23;
+	changeset [
+		item "Change API to match Type::Params v2 more closely. (Older API is still supported, but no longer documented.)"^^Change;
+		item "Require Type::Params v2."^^Update;
+		item "The `multimethods_from_roles` function has been removed."^^BackCompat;
+	].

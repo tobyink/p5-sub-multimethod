@@ -5,14 +5,13 @@ use warnings;
 package Sub::MultiMethod;
 
 our $AUTHORITY = 'cpan:TOBYINK';
-our $VERSION   = '0.909';
+our $VERSION   = '1.000';
 
 use B ();
 use Eval::TypeTiny qw( set_subname );
 use Exporter::Shiny qw(
 	multimethod   monomethod
 	multifunction monofunction
-	multimethods_from_roles
 );
 use Role::Hooks;
 use Scalar::Util qw( refaddr );
@@ -186,14 +185,6 @@ sub get_all_multimethod_candidates {
 		$DISPATCHERS{refaddr($coderef)} = 0;
 		$me;
 	}
-}
-
-sub _generate_multimethods_from_roles {
-	my ($me, $name, $args, $globals) = (shift, @_);
-	return sub {
-		require Carp;
-		Carp::carp( "Calling multimethods_from_roles is no longer needed and the function will be removed in a future release. Called" );
-	};
 }
 
 sub _generate_exported_function {
