@@ -282,7 +282,7 @@ sub _extract_type_params_spec {
 		if ( $tp{method} > 1 ) {
 			my $excess = $tp{method} - 1;
 			$tp{method} = 1;
-			ref( $tp{head} ) ? push( @{ $tp{head} }, Any ) : ( $tp{head} += $excess );
+			ref( $tp{head} ) ? push( @{ $tp{head} }, ( Any ) x $excess ) : ( $tp{head} += $excess );
 		}
 		if ( $tp{method} == 1 ) {
 			$tp{method} = Any;
