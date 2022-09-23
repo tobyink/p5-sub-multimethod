@@ -96,6 +96,7 @@ sub has_multimethod_candidates {
 sub _add_multimethod_candidate {
 	my ($me, $target, $method_name, $spec) = @_;
 	my $mmc = $me->_get_multimethod_candidates_ref($target, $method_name);
+	no warnings 'uninitialized';
 	if ( @$mmc and $spec->{method} != $mmc->[0]{method} ) {
 		require Carp;
 		Carp::carp(sprintf(
@@ -512,7 +513,7 @@ sub install_dispatcher {
 		ref($sub_name)               # $_[2]
 			? refaddr($sub_name)
 			: B::perlstring("$sub_name"),
-		$is_method,                  # $_[3]
+		$is_method || 0,             # $_[3]
 	);
 	
 	my $coderef = do {
