@@ -1,7 +1,7 @@
 # Sub-MultiMethod
 
 [![MetaCPAN](https://img.shields.io/cpan/v/Sub-MultiMethod.svg)](https://metacpan.org/release/Sub-MultiMethod)
-![Licence](https://img.shields.io/cpan/l/Sub-MultiMethod)
+[![Licence](https://img.shields.io/cpan/l/Sub-MultiMethod)](https://metacpan.org/dist/Sub-MultiMethod/source/LICENSE)
 [![Issues](https://img.shields.io/github/issues/tobyink/p5-sub-multimethod)](https://github.com/tobyink/p5-sub-multimethod/issues)
 [![CI](https://github.com/tobyink/p5-sub-multimethod/workflows/CI/badge.svg)](https://github.com/tobyink/p5-sub-multimethod/actions)
 [![Coveralls](https://coveralls.io/repos/tobyink/p5-sub-multimethod/badge.svg?branch=master&amp;service=github)](https://coveralls.io/github/tobyink/p5-sub-multimethod)
