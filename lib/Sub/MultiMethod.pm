@@ -19,6 +19,35 @@ use Scalar::Util qw( refaddr );
 use Type::Params ();
 use Types::Standard qw( -types -is );
 
+# Options other than these will be passed through to
+# Type::Params.
+#
+my %KNOWN_OPTIONS = (
+	alias              => 1,
+	code               => 1,
+	compiled           => 1,
+	copied             => 1,
+	declaration_order  => 1,
+	height             => 1,
+	is_monomethod      => 1,
+	method             => 1,
+	named              => 'legacy',
+	no_dispatcher      => 1,
+	score              => 1,
+	signature          => 'legacy',
+);
+
+# But not these!
+#
+my %BAD_OPTIONS = (
+	want_details       => 1,
+	want_object        => 1,
+	want_source        => 1,
+	goto_next          => 1,
+	on_die             => 1,
+	message            => 1,
+);
+
 {
 	my %CANDIDATES;
 	sub _get_multimethods_ref {
@@ -224,45 +253,48 @@ sub _generate_monofunction {
 	return $me->_generate_exported_function( $name, $args, $globals );
 }
 
-sub _clean_signature_spec_for_type_params {
-	my ( $me, %spec ) = ( shift, @_ );
-	my %cleaned;
+sub _extract_type_params_spec {
+	my ( $me, $target, $sub_name, $spec ) = ( shift, @_ );
 	
-	if ( $spec{signature} ) {
-		if ( delete $spec{named} ) {
-			$cleaned{named} = delete $spec{signature};
-		}
-		else {
-			$cleaned{positional} = delete $spec{signature};
-		}
+	my %tp = ( method => 1 );
+	$tp{method} = $spec->{method} if defined $spec->{method};
+	
+	if ( is_ArrayRef $spec->{signature} ) {
+		my $key = $spec->{named} ? 'named' : 'positional';
+		$tp{$key} = delete $spec->{signature};
 	}
 	
-	exists( $spec{$_} ) && ( $cleaned{$_} = delete $spec{$_} )
-		for qw(
-			positional pos named multiple multi
-			head tail method bless named_to_list
-		);
+	# Options which are not known by this module must be intended for
+	# Type::Params instead.
+	for my $key ( keys %$spec ) {
+		
+		next if ( $KNOWN_OPTIONS{$key} or $key =~ /^_/ );
+		
+		if ( $BAD_OPTIONS{$key} ) {
+			require Carp;
+			Carp::carp( "Unsupported option: $key" );
+			next;
+		}
+		
+		$tp{$key} = delete $spec->{$key};
+	}
 	
-	delete $spec{$_} for qw(
-		score no_dispatcher alias code is_monomethod
-		declaration_order copied height _id package subname
-	);
-	
-	warn "Unrecognized option: $_" for sort keys %spec;
+	$tp{package} ||= $target;
+	$tp{subname} ||= ref( $sub_name ) ? '__ANON__' : $sub_name;
 	
 	# Historically we allowed method=2, etc
-	if ( is_Int $cleaned{method} ) {
-		if ( $cleaned{method} > 1 ) {
-			my $excess = $cleaned{method} - 1;
-			$cleaned{method} = 1;
-			ref( $cleaned{head} ) ? push( @{ $cleaned{head} }, Any ) : ( $cleaned{head} += $excess );
+	if ( is_Int $tp{method} ) {
+		if ( $tp{method} > 1 ) {
+			my $excess = $tp{method} - 1;
+			$tp{method} = 1;
+			ref( $tp{head} ) ? push( @{ $tp{head} }, Any ) : ( $tp{head} += $excess );
 		}
-		if ( $cleaned{method} == 1 ) {
-			$cleaned{method} = Any;
+		if ( $tp{method} == 1 ) {
+			$tp{method} = Any;
 		}
 	}
 	
-	return %cleaned;
+	$spec->{signature_spec} = \%tp;
 }
 
 my %delete_while_copying = (
@@ -308,10 +340,7 @@ sub install_missing_dispatchers {
 }
 
 sub install_monomethod {
-	my $me = shift;
-	my ($target, $sub_name, %spec) = @_;
-	$spec{package} ||= $target;
-	$spec{subname} ||= ref( $sub_name ) ? '__ANON__' : $sub_name;
+	my ( $me, $target, $sub_name, %spec ) = ( shift, @_ );
 	
 	$spec{alias} ||= [];
 	$spec{alias} = [$spec{alias}] if !ref $spec{alias};
@@ -323,11 +352,8 @@ sub install_monomethod {
 my %hooked;
 my $DECLARATION_ORDER = 0;
 sub install_candidate {
-	my $me = shift;
-	my ($target, $sub_name, %spec) = @_;
-	$spec{package} ||= $target;
-	$spec{subname} ||= ref( $sub_name ) ? '__ANON__' : $sub_name;
-	$spec{method} = 1 unless defined $spec{method};
+	my ( $me, $target, $sub_name, %spec ) = ( shift, @_ );
+	$me->_extract_type_params_spec( $target, $sub_name, \%spec );
 
 	my $is_method = $spec{method};
 	
@@ -347,7 +373,7 @@ sub install_candidate {
 		}
 		
 		my %sig_spec = (
-			$me->_clean_signature_spec_for_type_params( %spec ),
+			%{ $spec{signature_spec} },
 			goto_next => $spec{code} || die('NO CODE???'),
 		);
 		my $code = sprintf(
@@ -541,9 +567,8 @@ sub pick_candidate {
 			$candidate->{compiled}{max_args} = undef;
 		}
 		else {
-			my %sig_spec = $me->_clean_signature_spec_for_type_params( %$candidate );
 			$candidate->{compiled} = Type::Params::signature(
-				%sig_spec,
+				%{ $candidate->{signature_spec} },
 				want_details => 1,
 			);
 		}
@@ -592,8 +617,8 @@ sub pick_candidate {
 			next if defined $candidate->{score};
 			my $sum = 0;
 			my @sig = map {
-				is_ArrayRef( $candidate->{$_} ) ? @{ $candidate->{$_} } : $candidate->{$_};
-			} qw(positional pos named signature);
+				is_ArrayRef( $candidate->{signature_spec}{$_} ) ? @{ $candidate->{signature_spec}{$_} } : ();
+			} qw(positional pos named);
 			foreach my $type ( @sig ) {
 				next unless is_Object $type;
 				my @real_parents = grep !$_->_is_null_constraint, $type, $type->parents;
@@ -740,7 +765,7 @@ on Perl 5.8.1 and above.
 
 =head1 DESCRIPTION
 
-Sub::Multimethod focusses on implementing the dispatching of multimethods
+Sub::MultiMethod focusses on implementing the dispatching of multimethods
 well and is less concerned with providing a nice syntax for setting them
 up. That said, the syntax provided is inspired by Moose's C<has> keyword
 and hopefully not entirely horrible.
@@ -771,32 +796,13 @@ class, in which case, you don't need to import anything.
 
 =head3 C<< multimethod $name => %spec >>
 
-The following options are supported in the specification for the
-multimethod.
+The specification supports the same options as L<Type::Params> v2
+to specify a signature for the method, plus a few Sub::MultiMethod-specific
+options. Any options not included in the list below are passed through to
+Type::Params. (The options C<goto_next>, C<on_die>, C<message>, and
+C<want_*> are not supported.)
 
 =over
-
-=item C<positional> I<< (ArrayRef) >> or C<named> I<< (ArrayRef) >>
-
-Like the similarly named parameters for C<signature> in L<Type::Params>,
-indicates whether this candidate uses positional or named parameters, and
-lists the parameters.
-
-For positional parameters, an ordered list of type constraints:
-
-  positional => [ Str, RegexpRef, Optional[FileHandle] ],
-
-For named parameters, each parameter must be preceded by a name.
-
-  named => [
-    prefix  => Str,
-    match   => RegexpRef,
-    output  => FileHandle, { default => sub { \*STDOUT } },
-  ],
-
-Sub::MultiMethods is designed to handle multi I<methods>, so  C<< $self >>
-at the start of all signatures is implied, and should not be included in the
-list of parameters.
 
 =item C<< code >> I<< (CodeRef) >>
 
@@ -877,22 +883,6 @@ and accept the default.
 =back
 
 =head3 C<< monomethod $name => %spec >>
-
-As a convenience, you can use Sub::MultiMethod to install normal methods.
-Why do this instead of using Perl's plain old C<sub> keyword? Well, it gives
-you the same signature checking.
-
-Supports the following options:
-
-=over
-
-=item C<< positional >> I<< (ArrayRef) >> or C<< named >> I<< (ArrayRef) >>
-
-=item C<< code >> I<< (CodeRef) >>
-
-=item C<< method >> I<< (Int) >>
-
-=back
 
 C<< monomethod($name, %spec) >> is basically just a shortcut for
 C<< multimethod(undef, alias => $name, %spec) >> though with error
