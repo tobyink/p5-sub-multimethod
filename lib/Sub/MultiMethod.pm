@@ -293,7 +293,7 @@ sub _extract_type_params_spec {
 }
 
 my %delete_while_copying = (
-	_id            => '_id should be unique', 
+	_id            => '_id should be unique',
 	alias          => 'alias should only be installed into package where originally declared',
 	copied         => 'this will be set after copying',
 	height         => 'this should never be kept anyway',
