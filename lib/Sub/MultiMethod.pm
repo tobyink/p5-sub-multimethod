@@ -264,6 +264,9 @@ sub _extract_type_params_spec {
 		my $key = $spec->{named} ? 'named' : 'positional';
 		$tp{$key} = delete $spec->{signature};
 	}
+	else {
+		$tp{named} = $spec->{named} if ref $spec->{named};
+	}
 	
 	# Options which are not known by this module must be intended for
 	# Type::Params instead.
