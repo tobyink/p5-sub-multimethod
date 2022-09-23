@@ -848,6 +848,18 @@ And:
     ...;
   },
 
+=item C<< signature >> I<< (CodeRef) >>
+
+Optional.
+
+If C<signature> is set, then Sub::MultiMethod won't use L<Type::Params>
+to build a signature for this multimethod candidate. It will treat the
+coderef as an already-built signature.
+
+A coderef signature is expected to take C<< @_ >>, throw an exception if
+the arguments cannot be handled, and return C<< @_ >> (possibly after some
+manipulation).
+
 =item C<< alias >> I<< (Str|ArrayRef[Str]) >>
 
 Optional.
