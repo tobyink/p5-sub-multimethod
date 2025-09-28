@@ -995,10 +995,10 @@ to return refereneces.
 Shortcut.
 
 You can use C<< die => "foo" >> as a shortcut for
-C<< code => sub { require Carp; Carp::croak("foo") }.
+C<< code => sub { require Carp; Carp::croak("foo") } >>.
 
 You can use C<< die => \&foo >> as a shortcut for
-C<< code => sub { require Carp; Carp::croak(foo()) }.
+C<< code => sub { require Carp; Carp::croak(foo()) } >>.
 
 =item C<< signature >> I<< (CodeRef) >>
 
