@@ -137,3 +137,11 @@
 		item "Added `want` option and associated exportable constants."^^Addition;
 		item "Added `if` option."^^Addition;
 	].
+
+`Sub-MultiMethod 1.002 cpan:TOBYINK`
+	issued  2025-09-28;
+	changeset [
+		item "Added `die` option as a shortcut for `code => sub { croak ... }`."^^Addition;
+		item "Added `return` option as a shortcut for `code => sub { return ... }`."^^Addition;
+		item "Support simpler syntax: `multimethod foo => [...] => sub { ... };`"^^Addition;
+	].
