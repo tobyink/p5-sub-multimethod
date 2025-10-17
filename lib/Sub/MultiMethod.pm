@@ -1273,6 +1273,15 @@ exported functions can be renamed, etc.
 
   use Sub::MultiMethod multimethod => { -as => 'mm' };
 
+You can import everything using C<< -all >>:
+
+  use Sub::MultiMethod -all;
+
+If your Perl version is recent enough, you can import everything as lexical
+keywords:
+
+  use Sub::MultiMethod -lexical, -all;
+
 You may also set various defaults in the import:
 
   use Sub::MultiMethod multimethod => {
