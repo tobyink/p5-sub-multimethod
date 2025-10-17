@@ -145,3 +145,9 @@
 		item "Added `return` option as a shortcut for `code => sub { return ... }`."^^Addition;
 		item "Support simpler syntax: `multimethod foo => [...] => sub { ... };`"^^Addition;
 	].
+
+`Sub-MultiMethod 1.003 cpan:TOBYINK`
+	issued  2025-10-17;
+	changeset [
+		item "Minor documentation improvements."^^Documentation;
+	].

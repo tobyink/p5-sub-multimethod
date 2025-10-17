@@ -5,7 +5,7 @@ use warnings;
 package Sub::MultiMethod;
 
 our $AUTHORITY = 'cpan:TOBYINK';
-our $VERSION   = '1.002';
+our $VERSION   = '1.003';
 
 use B ();
 use Eval::TypeTiny qw( set_subname );
